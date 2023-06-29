@@ -35,7 +35,7 @@ def job_request(id_code):
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?action=status&job={id_code}&_={time_stamp}'
 
     r = httpx.get(url, headers=headers)
-    
+
     if r.status_code == httpx.codes.OK:
         return r.json()
 
