@@ -4,16 +4,15 @@ import os
 import sys
 import time
 import httpx
-import pathlib
 import shutil
 import magic
 
 from pyproj import Proj, transform
 from fake_useragent import UserAgent
-
+from pathlib import Path
 
 def transform_projection(lat, lng):
-    inProj  = Proj('EPSG:25832')
+    inProj = Proj('EPSG:25832')
     outProj = Proj('EPSG:4326')
 
     y1, x1 = (lat, lng)
@@ -23,36 +22,34 @@ def transform_projection(lat, lng):
     return coords
 
 
-def unpack_download(id_code):
-    shutil.unpack_archive(f'./tmp/{id_code}', f'./tmp/{id_code}.xyz')
+def unpack_download(archive_path, target_path):
+    shutil.unpack_archive(archive_path, target_path)
 
 
-def load_download(id_code):
-    with open(f'./tmp/{id_code}', 'r') as f:
-        content = f.read(data)
+def load_data(target_path):
+    with open(target_path, 'r') as f:
+        content = f.read()
 
         return content
 
     return None
 
 
-def save_download(id_code, data):
-    pathlib.Path('./tmp').mkdir(parents=True, exist_ok=True) 
+def save_download(download_path, data):
+    Path('./tmp').mkdir(parents=True, exist_ok=True) 
 
-    with open(f'./tmp/{id_code}', 'wb') as f:
+    with open(download_path, 'wb') as f:
         f.write(data)
 
 
-def mime_type(id_code):
-    mime = magic.from_file(f'./tmp/{id_code}', mime=True)
+def get_mime_type(download_path):
+    mime_type = magic.from_file(download_path, mime=True)
 
-    return mime
+    return mime_type
 
 
-def rename_download(id_code, mime_type):
-    print(mime_type)
-
-    os.rename(f'./tmp/{id_code}', f'./tmp/{id_code}')
+def rename_download(download_path, archive_path):
+    os.rename(download_path, archive_path)
 
 
 def data_download(url):
@@ -107,31 +104,42 @@ def main():
 
     dgm_code = tile_request(ua.random)
     print(dgm_code)
+    tile_name = dgm_code['object']['kachelname']
     
     id_code = dgm_request(dgm_code['object']['kachelname'], ua.random)
+    job_id = id_code['id']
     print(id_code)
     
     user_agent = ua.random
 
-    job_status = job_request(id_code['id'], user_agent)
+    job_status = job_request(job_id, user_agent)
     print(job_status)
 
     while job_status['status'] != 'done':
         time.sleep(1)
-        job_status = job_request(id_code['id'], user_agent)
+        job_status = job_request(job_id, user_agent)
         print(job_status)
 
-
     data = data_download(job_status['downloadUrl'])
-    save_download(id_code['id'], data)
+    download_path = Path(f'./tmp/{job_id}')
 
-    mime_type = mime_type(id_code['id'])
-    rename_download(id_code['id'], mime_type)
+    save_download(download_path, data)
+    mime_type = get_mime_type(download_path)
+    file_format = mime_type.split('/')
 
-    sys.exit(1)
+    if len(file_format) == 0:
+        print('Error: no file extension detected')
+        sys.exit(1)
+    
+    file_extension = file_format[-1]
+    archive_path = Path(f'./tmp/{job_id}.{file_extension}')
+    target_path = Path(f'./tmp/{job_id}')
+    content_path = Path(f'./tmp/{job_id}/{tile_name}.xyz')
+    
+    rename_download(download_path, archive_path)
+    unpack_download(archive_path, target_path)
 
-    unpack_download(id_code['id'])
-    content = load_data(f'{id_code["id"]}.xyz')
+    content = load_data(content_path)
     print(content)
 
 
