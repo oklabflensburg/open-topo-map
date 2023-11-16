@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import click
 import httpx
 import shutil
 import magic
@@ -10,6 +11,7 @@ import magic
 from pyproj import Proj, transform
 from fake_useragent import UserAgent
 from pathlib import Path
+
 
 def transform_projection(lat, lng):
     inProj = Proj('EPSG:25832')
@@ -143,10 +145,18 @@ def fetch_data(tile_id):
     print(content)
 
 
-def main():
-    for tile_id in range(1, 18685):
+@click.command()
+@click.argument('start', type=int, nargs=1)
+@click.argument('end', type=int, nargs=1)
+def main(start, end):
+    if not start <= end:
+        print('Error: start must be greater or equal to end')
+        sys.exit(1)
+
+    for tile_id in range(start, end):
         print(tile_id)
         fetch_data(tile_id)
+
 
 if __name__ == '__main__':
     main()

@@ -13,3 +13,9 @@ virtualenv venv
 . venv/bin/activate
 pip install -r requirements.txt
 ```
+
+## Run script
+
+```
+python tile_downloader.py 843 18685
+```
