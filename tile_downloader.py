@@ -74,10 +74,10 @@ def job_request(id_code, user_agent):
     return {}
 
 
-def dgm_request(dgm_code, user_agent):
+def dgm_request(tile_name, tile_id, user_agent):
     time_stamp = int(time.time())
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
-    url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?url={dgm_code}.xyz&buttonClass=file1&id=6688&type=dgm1&action=start&_={time_stamp}'
+    url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?url={tile_name}.xyz&buttonClass=file1&id={tile_id}&type=dgm1&action=start&_={time_stamp}'
 
     r = httpx.get(url, headers=headers)
 
@@ -87,9 +87,9 @@ def dgm_request(dgm_code, user_agent):
     return {}
 
 
-def tile_request(user_agent):
+def tile_request(tile_id, user_agent):
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
-    url = 'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/_ajax/details.php?title=325286075&kachelname=dgm1_32_528_6075_1_sh&filepath=32520_6070&hoehenbezu=DE_DHHN92_NH&quasigeoid=DE_AdV_GCG2005_QGH&e_datum=2007-03-25&a_datum=2007-03-25&e_datum_dmy=25.03.2007&a_datum_dmy=25.03.2007&jahr=2007&ogc_fid=6688&type=dgm1&id=6688&_uid=dgm16688'
+    url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/_ajax/details.php?type=dgm1&id={tile_id}'
 
     r = httpx.get(url, headers=headers)
 
@@ -99,16 +99,16 @@ def tile_request(user_agent):
     return {}
 
 
-def main():
+def fetch_data(tile_id):
     ua = UserAgent()
 
-    dgm_code = tile_request(ua.random)
+    dgm_code = tile_request(tile_id, ua.random)
     print(dgm_code)
     tile_name = dgm_code['object']['kachelname']
     
-    id_code = dgm_request(dgm_code['object']['kachelname'], ua.random)
-    job_id = id_code['id']
+    id_code = dgm_request(tile_name, tile_id, ua.random)
     print(id_code)
+    job_id = id_code['id']
     
     user_agent = ua.random
 
@@ -142,6 +142,11 @@ def main():
     content = load_data(content_path)
     print(content)
 
+
+def main():
+    for tile_id in range(1, 18685):
+        print(tile_id)
+        fetch_data(tile_id)
 
 if __name__ == '__main__':
     main()
