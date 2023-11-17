@@ -38,7 +38,7 @@ def load_data(target_path):
 
 
 def save_download(download_path, data):
-    Path('./tmp').mkdir(parents=True, exist_ok=True) 
+    Path('./sh').mkdir(parents=True, exist_ok=True)
 
     with open(download_path, 'wb') as f:
         f.write(data)
@@ -101,17 +101,17 @@ def tile_request(tile_id, user_agent):
     return {}
 
 
-def fetch_data(tile_id):
+def fetch_data(tile_id, verbose):
     ua = UserAgent()
 
     dgm_code = tile_request(tile_id, ua.random)
     print(dgm_code)
     tile_name = dgm_code['object']['kachelname']
-    
+
     id_code = dgm_request(tile_name, tile_id, ua.random)
     print(id_code)
     job_id = id_code['id']
-    
+
     user_agent = ua.random
 
     job_status = job_request(job_id, user_agent)
@@ -123,7 +123,7 @@ def fetch_data(tile_id):
         print(job_status)
 
     data = data_download(job_status['downloadUrl'])
-    download_path = Path(f'./tmp/{job_id}')
+    download_path = Path(f'./sh/{job_id}')
 
     save_download(download_path, data)
     mime_type = get_mime_type(download_path)
@@ -132,30 +132,33 @@ def fetch_data(tile_id):
     if len(file_format) == 0:
         print('Error: no file extension detected')
         sys.exit(1)
-    
+
     file_extension = file_format[-1]
-    archive_path = Path(f'./tmp/{job_id}.{file_extension}')
-    target_path = Path(f'./tmp/{job_id}')
-    content_path = Path(f'./tmp/{job_id}/{tile_name}.xyz')
-    
+    archive_path = Path(f'./sh/{job_id}.{file_extension}')
+    target_path = Path(f'./sh/{job_id}')
+    content_path = Path(f'./sh/{job_id}/{tile_name}.xyz')
+
     rename_download(download_path, archive_path)
     unpack_download(archive_path, target_path)
 
     content = load_data(content_path)
-    print(content)
+
+    if verbose:
+        print(content)
 
 
 @click.command()
+@click.option('--verbose', '-v', is_flag=True, help="Print more output.")
 @click.argument('start', type=int, nargs=1)
 @click.argument('end', type=int, nargs=1)
-def main(start, end):
+def main(start, end, verbose):
     if not start <= end:
         print('Error: start must be greater or equal to end')
         sys.exit(1)
 
     for tile_id in range(start, end):
         print(tile_id)
-        fetch_data(tile_id)
+        fetch_data(tile_id, verbose)
 
 
 if __name__ == '__main__':
