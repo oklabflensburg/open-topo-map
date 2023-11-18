@@ -143,9 +143,8 @@ def fetch_data(tile_id, unpack, verbose):
     if unpack or verbose:
         unpack_download(archive_path, target_path)
 
-    content = load_data(content_path)
-
     if verbose:
+        content = load_data(content_path)
         print(content)
 
 
