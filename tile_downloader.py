@@ -101,7 +101,7 @@ def tile_request(tile_id, user_agent):
     return {}
 
 
-def fetch_data(tile_id, verbose):
+def fetch_data(tile_id, unpack, verbose):
     ua = UserAgent()
 
     dgm_code = tile_request(tile_id, ua.random)
@@ -139,7 +139,9 @@ def fetch_data(tile_id, verbose):
     content_path = Path(f'./sh/{job_id}/{tile_name}.xyz')
 
     rename_download(download_path, archive_path)
-    unpack_download(archive_path, target_path)
+
+    if unpack or verbose:
+        unpack_download(archive_path, target_path)
 
     content = load_data(content_path)
 
@@ -148,17 +150,18 @@ def fetch_data(tile_id, verbose):
 
 
 @click.command()
-@click.option('--verbose', '-v', is_flag=True, help="Print more output.")
+@click.option('--verbose', '-v', is_flag=True, help='Print more verbode output')
+@click.option('--unpack', '-u', is_flag=True, help='Unpack downloaded archive')
 @click.argument('start', type=int, nargs=1)
 @click.argument('end', type=int, nargs=1)
-def main(start, end, verbose):
+def main(start, end, unpack, verbose):
     if not start <= end:
         print('Error: start must be greater or equal to end')
         sys.exit(1)
 
     for tile_id in range(start, end):
         print(tile_id)
-        fetch_data(tile_id, verbose)
+        fetch_data(tile_id, unpack, verbose)
 
 
 if __name__ == '__main__':
