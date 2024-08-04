@@ -1,4 +1,4 @@
-/venv
-*.zip
 *.gz
-.DS_Store
+*.zip
+venv/
+.DS_Store/

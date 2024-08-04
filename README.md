@@ -7,19 +7,21 @@ Scripts zur Darstellung der topografischen Flächen in Schleswig-Holstein
 ## Setup Application
 
 ```
-sudo apt install python3 virtualenv tree git jq
+sudo apt install python3 python3-venv
 git clone https://github.com/oklabflensburg/open-topo-map.git
-cd open-topo-map
-virtualenv venv
-. venv/bin/activate
-pip install -r requirements.txt
+cd open-topo-map/tools
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+deactivate
 ```
 
 
 ## Run script
 
 ```
-python tile_downloader.py 843 18685
+cd tools
+python3 tile_downloader.py 843 18685
 ```
 
 

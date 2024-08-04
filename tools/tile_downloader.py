@@ -1,5 +1,3 @@
-#!./venv/bin/python
-
 import os
 import sys
 import time
@@ -92,8 +90,10 @@ def dgm_request(tile_name, tile_id, user_agent):
 def tile_request(tile_id, user_agent):
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/_ajax/details.php?type=dgm1&id={tile_id}'
+    print(url)
 
     r = httpx.get(url, headers=headers)
+    print(r.status)
 
     if r.status_code == httpx.codes.OK:
         return r.json()
