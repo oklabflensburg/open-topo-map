@@ -103,10 +103,10 @@ def fetch_data(tile_id, path, verbose):
     data = download_archive(reponse_status['downloadUrl'])
     file_name = f'{tile_id}_{tile_flur}'
 
-    if Path(path).is_dir():
-        download_path = Path(f'{path}/sh/alkis/{file_name}.zip')
+    if path is not None and Path(path).is_dir():
+        download_path = Path(f'{path}/sh/alkis/{file_name}.zip').resolve()
     else:
-        download_path = Path(f'../data/sh/alkis/{file_name}.zip')
+        download_path = Path(f'../data/sh/alkis/{file_name}.zip').resolve()
 
     save_download(download_path, data)
 
