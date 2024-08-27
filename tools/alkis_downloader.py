@@ -3,6 +3,7 @@ import sys
 import time
 import click
 import httpx
+import logging as log
 import magic
 
 from httpx import ReadTimeout
@@ -18,7 +19,7 @@ def save_download(download_path, data):
     with open(download_path, 'wb') as f:
         f.write(data)
 
-    print(f'saved archieve to {download_path}')
+    log.info(f'saved archieve to {download_path}')
 
 
 def get_mime_type(download_path):
@@ -48,7 +49,7 @@ def status_request(id_code, user_agent):
     time_stamp = int(time.time())
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?action=status&job={id_code}&_={time_stamp}'
-    print(url)
+    log.info(url)
 
     r = httpx.get(url, headers=headers, verify=False)
 
@@ -62,7 +63,7 @@ def job_request(tile_id, tile_flur, user_agent):
     time_stamp = int(time.time())
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?url={tile_flur}.xml.gz&buttonClass=file1&id={tile_id}&type=alkis&action=start&_={time_stamp}'
-    print(url)
+    log.info(url)
 
     r = httpx.get(url, headers=headers, verify=False)
 
@@ -75,7 +76,7 @@ def job_request(tile_id, tile_flur, user_agent):
 def tile_request(tile_id, user_agent):
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/_ajax/details.php?type=alkis&id={tile_id}'
-    print(url)
+    log.info(url)
 
     r = httpx.get(url, headers=headers, verify=False)
 
@@ -90,28 +91,33 @@ def fetch_data(tile_id, path, verbose):
     user_agent = ua.random
 
     response_tile = tile_request(tile_id, user_agent)
-    print(response_tile)
+    log.info(response_tile)
     tile_flur = response_tile['object']['flur']
 
     response_job = job_request(tile_id, tile_flur, user_agent)
-    print(response_job)
+    log.info(response_job)
 
     while response_job['success'] is not True:
         time.sleep(1)
         response_job = job_request(tile_id, tile_flur, user_agent)
-        print(response_job)
+        log.info(response_job)
 
     job_id = response_job['id']
 
     reponse_status = status_request(job_id, user_agent)
-    print(reponse_status)
+    log.info(reponse_status)
 
     while reponse_status['status'] != 'done':
         time.sleep(1)
         reponse_status = status_request(job_id, user_agent)
-        print(reponse_status)
+        log.info(reponse_status)
 
     data = download_archive(reponse_status['downloadUrl'])
+
+    if data is None:
+        log.warning('No data has been fetched')
+        return
+
     file_name = f'{tile_id}_{tile_flur}'
 
     if path is not None and Path(path).is_dir():
@@ -125,13 +131,21 @@ def fetch_data(tile_id, path, verbose):
 
 
 @click.command()
+@click.option('--debug', '-d', is_flag=True, help='Print more debug output')
 @click.option('--verbose', '-v', is_flag=True, help='Print more verbose output')
 @click.option('--path', '-p', type=str, help='Set the source output format')
 @click.argument('start', type=int, nargs=1)
 @click.argument('end', type=int, nargs=1)
-def main(start, end, path, verbose):
+def main(start, end, path, verbose, debug):
+    if debug:
+        log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
+    if verbose:
+        log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO)
+    else:
+        log.basicConfig(format='%(levelname)s: %(message)s')
+
     if not start <= end:
-        print('Error: start must be greater or equal to end')
+        log.error('argument start must be greater as end')
         sys.exit(1)
 
     for tile_id in range(start, end):
