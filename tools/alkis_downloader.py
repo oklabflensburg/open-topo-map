@@ -5,6 +5,7 @@ import click
 import httpx
 import magic
 
+from httpx import ReadTimeout
 from fake_useragent import UserAgent
 from pathlib import Path
 
@@ -31,7 +32,11 @@ def rename_download(download_path, archive_path):
 
 
 def download_archive(url):
-    r = httpx.get(url, verify=False)
+    try:
+        r = httpx.get(url, verify=False)
+    except ReadTimeout as e:
+        time.sleep(5)
+        download_archive(url)
 
     if r.status_code == httpx.codes.OK:
         return r.content
@@ -90,6 +95,12 @@ def fetch_data(tile_id, path, verbose):
 
     response_job = job_request(tile_id, tile_flur, user_agent)
     print(response_job)
+
+    while response_job['success'] is not True:
+        time.sleep(1)
+        response_job = job_request(tile_id, tile_flur, user_agent)
+        print(response_job)
+
     job_id = response_job['id']
 
     reponse_status = status_request(job_id, user_agent)
