@@ -109,7 +109,7 @@ def fetch_data(tile_id, path, verbose):
     log.info(response_job)
 
     if response_job['success'] is False:
-        msg = response_job['msg']
+        msg = response_job['message']
         log.error(f'{msg} mit der {tile_id} in der Gemarkung {tile_gemarkung} und Flustück {tile_flur}')
 
         return
