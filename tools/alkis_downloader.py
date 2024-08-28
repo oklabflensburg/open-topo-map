@@ -40,7 +40,7 @@ def download_archive(url):
         r = httpx.get(url, verify=False)
     except ReadTimeout as e:
         time.sleep(5)
-        download_archive(url)
+        r = download_archive(url)
 
     if r.status_code == httpx.codes.OK:
         return r.content
@@ -94,7 +94,14 @@ def fetch_data(tile_id, path, verbose):
     user_agent = ua.random
 
     response_tile = tile_request(tile_id, user_agent)
-    log.info(response_tile)
+
+    if response_tile['success'] is False:
+        log.error(response_tile['message'])
+
+        return
+    else:
+        log.info(response_tile)
+
     tile_flur = response_tile['object']['flur']
     tile_gemarkung = response_tile['object']['gemarkung']
 
