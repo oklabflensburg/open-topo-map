@@ -96,9 +96,16 @@ def fetch_data(tile_id, path, verbose):
     response_tile = tile_request(tile_id, user_agent)
     log.info(response_tile)
     tile_flur = response_tile['object']['flur']
+    tile_gemarkung = response_tile['object']['gemarkung']
 
     response_job = job_request(tile_id, tile_flur, user_agent)
     log.info(response_job)
+
+    if response_job['success'] is False:
+        msg = response_job['msg']
+        log.error(f'{msg} mit der {tile_id} in der Gemarkung {tile_gemarkung} und Flustück {tile_flur}')
+
+        return
 
     while response_job['success'] is not True:
         time.sleep(1)
