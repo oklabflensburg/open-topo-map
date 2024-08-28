@@ -16,8 +16,11 @@ def save_download(download_path, data):
     directories = Path(download_path).parent.resolve()
     Path(directories).mkdir(parents=True, exist_ok=True)
 
-    with open(download_path, 'wb') as f:
-        f.write(data)
+    try:
+        with open(download_path, 'wb') as f:
+            f.write(data)
+    except PermissionError as e:
+        log.error(e)
 
     log.info(f'saved archieve to {download_path}')
 
