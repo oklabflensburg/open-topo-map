@@ -52,21 +52,34 @@ def status_request(id_code, user_agent):
     time_stamp = int(time.time())
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?action=status&job={id_code}&_={time_stamp}'
-    log.info(url)
+    data = None
 
     r = httpx.get(url, headers=headers, verify=False)
 
-    if r.status_code == httpx.codes.OK:
-        return r.json()
+    if r.status_code != httpx.codes.OK:
+        log.error(f'request failed with status {r.status_code}')
 
-    return {}
+        return
+
+    data = r.json()
+
+    while data is not None and data['status'] != 'done':
+        time.sleep(1)
+        data = status_request(id_code, user_agent)
+
+    if data is not None and data['success'] is False:
+        msg = reponse_status['msg']
+        log.error(f'{msg} mit der {tile_id} mit der Gemarkung {tile_gemarkung} und Flustück {tile_flur}')
+
+        return
+
+    return data
 
 
 def job_request(tile_id, tile_flur, user_agent):
     time_stamp = int(time.time())
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?url={tile_flur}.xml.gz&buttonClass=file1&id={tile_id}&type=alkis&action=start&_={time_stamp}'
-    log.info(url)
 
     r = httpx.get(url, headers=headers, verify=False)
 
@@ -79,7 +92,6 @@ def job_request(tile_id, tile_flur, user_agent):
 def tile_request(tile_id, user_agent):
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
     url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/_ajax/details.php?type=alkis&id={tile_id}'
-    log.info(url)
 
     r = httpx.get(url, headers=headers, verify=False)
 
@@ -110,7 +122,7 @@ def fetch_data(tile_id, path, verbose):
 
     if response_job['success'] is False:
         msg = response_job['message']
-        log.error(f'{msg} mit der {tile_id} in der Gemarkung {tile_gemarkung} und Flustück {tile_flur}')
+        log.error(f'{msg} mit der {tile_id} mit der Gemarkung {tile_gemarkung} und Flustück {tile_flur}')
 
         return
 
@@ -123,11 +135,6 @@ def fetch_data(tile_id, path, verbose):
 
     reponse_status = status_request(job_id, user_agent)
     log.info(reponse_status)
-
-    while reponse_status['status'] != 'done':
-        time.sleep(1)
-        reponse_status = status_request(job_id, user_agent)
-        log.info(reponse_status)
 
     data = download_archive(reponse_status['downloadUrl'])
 
