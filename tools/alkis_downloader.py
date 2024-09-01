@@ -3,6 +3,7 @@ import sys
 import time
 import click
 import httpx
+import traceback
 import logging as log
 import magic
 
@@ -10,6 +11,16 @@ from httpx import ReadTimeout
 from fake_useragent import UserAgent
 from pathlib import Path
 
+
+
+# log uncaught exceptions
+def log_exceptions(type, value, tb):
+    for line in traceback.TracebackException(type, value, tb).format(chain=True):
+        log.exception(line)
+
+    log.exception(value)
+
+    sys.__excepthook__(type, value, tb) # calls default excepthook
 
 
 def save_download(download_path, data):
@@ -177,4 +188,6 @@ def main(start, end, path, verbose, debug):
 
 
 if __name__ == '__main__':
+    print(sys.getrecursionlimit())
+    sys.excepthook = log_exceptions
     main()
