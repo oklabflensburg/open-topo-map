@@ -80,7 +80,7 @@ def status_request(id_code, user_agent):
 
     if data is not None and data['success'] is False:
         msg = reponse_status['msg']
-        log.error(f'{msg} mit der {tile_id} mit der Gemarkung {tile_gemarkung} und Flustück {tile_flur}')
+        log.error(f'{msg} mit der {tile_id} mit der Gemarkung {tile_gemarkung} und Flurstück {tile_flur}')
 
         return
 
