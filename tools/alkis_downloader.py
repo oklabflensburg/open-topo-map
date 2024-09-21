@@ -74,13 +74,18 @@ def status_request(id_code, user_agent):
 
     data = r.json()
 
-    while data is not None and data['status'] != 'done':
-        time.sleep(1)
-        data = status_request(id_code, user_agent)
+    try:
+        while data is not None and data['status'] != 'done':
+            time.sleep(1)
+            data = status_request(id_code, user_agent)
+    except Exception as e:
+        log.error(f'{e} bei tile_id: {tile_id} in der Gemarkung: {tile_gemarkung} und Flurstück: {tile_flur}')
+
+        return
 
     if data is not None and data['success'] is False:
         msg = reponse_status['msg']
-        log.error(f'{msg} mit der {tile_id} mit der Gemarkung {tile_gemarkung} und Flurstück {tile_flur}')
+        log.error(f'{msg} bei tile_id: {tile_id} in der Gemarkung: {tile_gemarkung} und Flurstück: {tile_flur}')
 
         return
 
