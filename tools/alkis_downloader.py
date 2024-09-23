@@ -59,10 +59,10 @@ def download_archive(url):
     return None
 
 
-def status_request(id_code, user_agent):
+def status_request(job_id, tile_id, tile_gemarkung, tile_flur, user_agent):
     time_stamp = int(time.time())
     headers = {'Content-Type': 'application/json', 'User-Agent': user_agent}
-    url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?action=status&job={id_code}&_={time_stamp}'
+    url = f'https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/multi.php?action=status&job={job_id}&_={time_stamp}'
     data = None
 
     r = httpx.get(url, headers=headers, verify=False)
@@ -77,7 +77,7 @@ def status_request(id_code, user_agent):
     try:
         while data is not None and data['status'] != 'done':
             time.sleep(1)
-            data = status_request(id_code, user_agent)
+            data = status_request(job_id, tile_id, tile_gemarkung, tile_flur, user_agent)
     except Exception as e:
         log.error(f'{e} bei tile_id: {tile_id} in der Gemarkung: {tile_gemarkung} und Flurstück: {tile_flur}')
 
@@ -149,7 +149,7 @@ def fetch_data(tile_id, path, verbose):
 
     job_id = response_job['id']
 
-    reponse_status = status_request(job_id, user_agent)
+    reponse_status = status_request(job_id, tile_id, tile_gemarkung, tile_flur, user_agent)
     log.info(reponse_status)
 
     data = download_archive(reponse_status['downloadUrl'])
