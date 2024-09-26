@@ -152,22 +152,21 @@ def fetch_data(tile_id, path, verbose):
     reponse_status = status_request(job_id, tile_id, tile_gemarkung, tile_flur, user_agent)
     log.info(reponse_status)
 
-    data = download_archive(reponse_status['downloadUrl'])
+    try:
+        data = download_archive(reponse_status['downloadUrl'])
 
-    if data is None:
-        log.warning('No data has been fetched')
+        file_name = f'{tile_id}_{tile_flur}'
+
+        if path is not None and Path(path).is_dir():
+            download_path = Path(f'{path}/sh/alkis/{file_name}.zip').resolve()
+        else:
+            download_path = Path(f'../data/sh/alkis/{file_name}.zip').resolve()
+
+        save_download(download_path, data)
+    except Exception as e:
+        log.error(f'{e} bei tile_id: {tile_id} in der Gemarkung: {tile_gemarkung} und Flurstück: {tile_flur}')
+
         return
-
-    file_name = f'{tile_id}_{tile_flur}'
-
-    if path is not None and Path(path).is_dir():
-        download_path = Path(f'{path}/sh/alkis/{file_name}.zip').resolve()
-    else:
-        download_path = Path(f'../data/sh/alkis/{file_name}.zip').resolve()
-
-    save_download(download_path, data)
-
-    return
 
 
 @click.command()
