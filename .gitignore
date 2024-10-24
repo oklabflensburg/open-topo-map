@@ -1,4 +1,13 @@
-*.gz
-*.zip
+__MACOSX/
 venv/
 .DS_Store
+.env
+.idea
+*.zip
+*.tgz
+*.suo
+*.local
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

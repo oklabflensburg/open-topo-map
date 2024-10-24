@@ -64,3 +64,15 @@ Make sure to adapt database connection string to your needs
 cd /data/sh/alkis
 for i in *.zip; do f=$(basename $i | sed -e 's/.zip$//'); n=$(echo $f | sed -e 's/.*_//'); echo $n; unzip -o $f && [[ -e ${n}.xml ]] || gunzip "${n}.xml.gz" && ogr2ogr -f "PostgreSQL" PG:"dbname=oklab user=oklab port=5432 host=localhost" -nlt CONVERT_TO_LINEAR  -lco GEOMETRY_NAME=geom -lco SPATIAL_INDEX=GIST -update -overwrite -skipfailures -s_srs EPSG:25832 -t_srs EPSG:4326 -progress --config PG_USE_COPY YES $n.xml ax_flurstueck ax_gebaeude && rm -v ${n}.gfs ${n}.xml; done
 ```
+
+
+## SH DGM1 tile raster inserts
+
+```
+cd tools
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+python3 insert_epsg_csv.py --env ../.env --src ../data/sh_dgm1_tiles.csv --verbose
+deactivate
+```
