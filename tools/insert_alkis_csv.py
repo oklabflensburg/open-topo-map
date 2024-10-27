@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import click
 import traceback
@@ -6,9 +7,6 @@ import logging as log
 import psycopg2
 import csv
 
-from shapely import wkb
-from shapely.geometry import Polygon
-from pyproj import Transformer
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -48,46 +46,26 @@ def connect_database(env_path):
 
 
 def insert_row(cur, row):
-    crs = row['crs']
-    range_min_x = int(row['range_min_x'])
-    range_min_y = int(row['range_min_y'])
-    range_max_x = int(row['range_max_x'])
-    range_max_y = int(row['range_max_y'])
-    width = int(row['width'])
-    height = int(row['height'])
-    undefined_values = int(row['undefined_values'])
-    file_name = row['file_name']
-    flags = row['errors'][2:]
+    adv_id = row['adv_id']
+    wkt_geometry = row['wkt_geometry']
 
-    # Convert hex string to an integer, then format it as a binary string
-    bit_string = bin(int(flags, 16))[2:]
+    # Parse the identifier and the polygon coordinates
+    match = re.match(r'Polygon\(\((.*?)\)\)', wkt_geometry)
+    coordinates = match.group(1)
 
-    # Ensure the bit string length matches the expected length of the BIT column (if necessary)
-    # For example, if the BIT column is defined as BIT(32), you might want to pad the string
-    bit_string_padded = bit_string.zfill(32)  # Adjust '32' to the length of your BIT column
-
-    points = [(range_min_x, range_min_y), (range_max_x, range_min_y), (range_max_x, range_max_y), (range_min_x, range_max_y)]
-
-    transformer = Transformer.from_crs(crs, 'EPSG:4326', always_xy=True)
-    transformed_points = list(transformer.itransform(points))
-
-    polygon = Polygon(transformed_points)
-    wkb_geometry = wkb.dumps(polygon, hex=True, srid=4326)
+    wkt_geometry = f'POLYGON(({coordinates}))'
 
     sql = '''
-        INSERT INTO sh_dgm1_meta 
-            (crs, range_min_x, range_min_y, range_max_x, range_max_y, 
-            width, height, undefined_values, file_name, flags, wkb_geometry)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+        INSERT INTO sh_alkis_parcel (adv_id, wkb_geometry)
+        VALUES (%s, ST_AsBinary(ST_Transform(ST_GeomFromText(%s, 25832), 4326))) RETURNING id
     '''
 
     try:
-        cur.execute(sql, (crs, range_min_x, range_min_y, range_max_x, range_max_y, 
-            width, height, undefined_values, file_name, bit_string_padded, wkb_geometry))
+        cur.execute(sql, (adv_id, wkt_geometry))
 
         last_inserted_id = cur.fetchone()[0]
 
-        log.info(f'inserted {file_name} with id {last_inserted_id}')
+        log.info(f'inserted {adv_id} with id {last_inserted_id}')
     except Exception as e:
         log.error(e)
 

@@ -69,10 +69,31 @@ for i in *.zip; do f=$(basename $i | sed -e 's/.zip$//'); n=$(echo $f | sed -e '
 ## SH DGM1 tile raster inserts
 
 ```
+psql -U oklab -h localhost -d oklab -p 5432 < ../data/sh_dgm1_meta_schema.sql
+```
+
+```
 cd tools
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 python3 insert_epsg_csv.py --env ../.env --src ../data/sh_dgm1_tiles.csv --verbose
+deactivate
+```
+
+
+## SH ALKIS Flurstücke inserts
+
+
+```
+psql -U oklab -h localhost -d oklab -p 5432 < ../data/sh_alkis_parcel_schema.sql
+```
+
+```
+cd tools
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+python3 insert_alkis_csv.py --env ../.env --src ../data/sh/alkis/flur_test_1.csv --verbose
 deactivate
 ```
