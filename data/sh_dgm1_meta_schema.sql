@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS sh_dgm1_meta (
   undefined_values INT,
   file_name VARCHAR,
   flags BIT(32),
-  wkb_geometry GEOMETRY(GEOMETRY, 4326),
+  wkb_geometry GEOMETRY(GEOMETRY, 3857),
   PRIMARY KEY(id)
 );
 
