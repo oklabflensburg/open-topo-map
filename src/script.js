@@ -1,0 +1,135 @@
+import maplibregl from 'maplibre-gl'
+import Papa from 'papaparse'
+
+import 'maplibre-gl/dist/maplibre-gl.css'
+
+const map = new maplibregl.Map({
+    container: 'map',
+    style: {
+        version: 8,
+        sources: {
+            customRasterTiles: {
+                type: 'raster',
+                tiles: ['https://tiles.oklabflensburg.de/fosm/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: "© My Custom Tiles"
+            }
+        },
+        layers: [{
+            id: 'custom-tiles',
+            type: 'raster',
+            source: 'customRasterTiles',
+            minzoom: 0,
+            maxzoom: 18
+        }]
+    },
+    center: [9.4, 54.8],
+    zoom: 10
+})
+
+function getColorFromHeight(h) {
+    // Clamp between 0 and 150
+    const clamped = Math.max(0, Math.min(150, h))
+
+    // Use HSL where 240 (blue) → 120 (green) → 0 (red) → 60 (yellow)
+    let hue
+    if (clamped <= 50) {
+        hue = 240 - (clamped / 50) * 120 // 240 to 120
+    } else if (clamped <= 100) {
+        hue = 120 - ((clamped - 50) / 50) * 120 // 120 to 0
+    } else {
+        hue = 0 + ((clamped - 100) / 50) * 60 // 0 to 60
+    }
+
+    return `hsl(${hue}, 100%, 50%)`
+}
+
+function rowToFeature(row) {
+    if (row.length < 11) return null
+
+    const label = row[0]
+    const coords = [
+        [parseFloat(row[2]), parseFloat(row[3])],
+        [parseFloat(row[4]), parseFloat(row[5])],
+        [parseFloat(row[6]), parseFloat(row[7])],
+        [parseFloat(row[8]), parseFloat(row[9])],
+        [parseFloat(row[2]), parseFloat(row[3])]
+    ]
+
+    const meanHeight = parseFloat(row[row.length - 2]) // 2nd last column
+    const color = getColorFromHeight(meanHeight)
+
+    return {
+        type: "Feature",
+        properties: { label, color },
+        geometry: {
+            type: "Polygon",
+            coordinates: [coords]
+        }
+    }
+}
+
+map.on('load', () => {
+    const csvUrl = '/topo-tiles-meta.csv'
+    fetch(csvUrl)
+        .then(res => res.text())
+        .then(csvText => {
+            const features = []
+
+            Papa.parse(csvText, {
+                skipEmptyLines: true,
+                complete: function (results) {
+                    for (const row of results.data) {
+                        const feature = rowToFeature(row)
+                        if (feature) features.push(feature)
+                    }
+
+                    const geojson = {
+                        type: "FeatureCollection",
+                        features
+                    }
+
+                    map.addSource("polygons", {
+                        type: "geojson",
+                        data: geojson
+                    })
+
+                    map.addLayer({
+                        id: "polygons-fill",
+                        type: "fill",
+                        source: "polygons",
+                        paint: {
+                            "fill-color": ["get", "color"],
+                            "fill-opacity": 0.5
+                        }
+                    })
+
+                    map.addLayer({
+                        id: "polygons-outline",
+                        type: "line",
+                        source: "polygons",
+                        paint: {
+                            "line-color": "#444",
+                            "line-width": 0.5
+                        }
+                    })
+
+                    map.on('click', 'polygons-fill', (e) => {
+                        const props = e.features[0].properties
+                        new maplibregl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`<strong>${props.label}</strong>`)
+                            .addTo(map)
+                    })
+
+                    map.on('mouseenter', 'polygons-fill', () => {
+                        map.getCanvas().style.cursor = 'pointer'
+                    })
+
+                    map.on('mouseleave', 'polygons-fill', () => {
+                        map.getCanvas().style.cursor = ''
+                    })
+                }
+            })
+        })
+})
