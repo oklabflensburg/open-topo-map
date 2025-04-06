@@ -1,5 +1,8 @@
 __MACOSX/
 venv/
+dist/
+node_modules/
+.parcel-cache/
 .DS_Store
 .env
 .idea

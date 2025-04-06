@@ -1,0 +1,17 @@
+{
+  "name": "open-topo-map",
+  "version": "1.0.0",
+  "source": "src/index.html",
+  "staticFiles": {
+    "staticPath": "public"
+  },
+  "scripts": {
+    "start": "parcel src/index.html --dist-dir dist --public-url /",
+    "build": "parcel build src/index.html --dist-dir dist --public-url /"
+  },
+  "devDependencies": {
+    "@parcel/config-default": "^2.14.4",
+    "parcel": "^2.14.4",
+    "parcel-reporter-static-files-copy": "^1.5.3"
+  }
+}

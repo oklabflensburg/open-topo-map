@@ -20,7 +20,7 @@
     /*
     const map = new maplibregl.Map({
         container: 'map',
-        style: 'https://demotiles.maplibre.org/style.json', // ✅ Free public style
+        style: 'https://demotiles.maplibre.org/style.json', // ✅ Free data style
         center: [9.4, 54.8],
         zoom: 9
     });
@@ -92,7 +92,8 @@
     }
 
     map.on('load', () => {
-        fetch("https://grain.one/leaflet-canvas/topo-tiles-meta.csv")
+        const csvUrl = '/topo-tiles-meta.csv';
+        fetch(csvUrl)
             .then(res => res.text())
             .then(csvText => {
                 const features = [];
