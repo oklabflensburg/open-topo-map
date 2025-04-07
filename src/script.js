@@ -27,6 +27,20 @@ const map = new maplibregl.Map({
     zoom: 10
 })
 
+function getColorFromValue(value, min, max) {
+    // Ensure the value is clamped within the min-max range
+    value = Math.max(min, Math.min(max, value));
+
+    // Calculate the normalized value between 0 and 1
+    const normalizedValue = (value - min) / (max - min);
+
+    // Convert the normalized value to a grayscale value between 0 (black) and 255 (white)
+    const grayscale = Math.floor(normalizedValue * 255);
+
+    // Return the color as a string in rgb format
+    return `rgb(${grayscale}, ${grayscale}, ${grayscale})`;
+}
+
 function getColorFromHeight(h) {
     // Clamp between 0 and 150
     const clamped = Math.max(0, Math.min(150, h))
@@ -38,7 +52,7 @@ function getColorFromHeight(h) {
     } else if (clamped <= 100) {
         hue = 120 - ((clamped - 50) / 50) * 120 // 120 to 0
     } else {
-        hue = 0 + ((clamped - 100) / 50) * 60 // 0 to 60
+        hue = ((clamped - 100) / 50) * 60 // 0 to 60
     }
 
     return `hsl(${hue}, 100%, 50%)`
@@ -47,16 +61,19 @@ function getColorFromHeight(h) {
 function rowToFeature(row) {
     if (row.length < 11) return null
 
+    const daysIndex = 2
+    const coordIndex= 4
     const label = row[0]
     const coords = [
-        [parseFloat(row[2]), parseFloat(row[3])],
-        [parseFloat(row[4]), parseFloat(row[5])],
-        [parseFloat(row[6]), parseFloat(row[7])],
-        [parseFloat(row[8]), parseFloat(row[9])],
-        [parseFloat(row[2]), parseFloat(row[3])]
+        [parseFloat(row[coordIndex]), parseFloat(row[coordIndex + 1])],
+        [parseFloat(row[coordIndex + 2]), parseFloat(row[coordIndex + 3])],
+        [parseFloat(row[coordIndex + 4]), parseFloat(row[coordIndex + 5])],
+        [parseFloat(row[coordIndex + 6]), parseFloat(row[coordIndex + 7])],
+        [parseFloat(row[coordIndex]), parseFloat(row[coordIndex + 1])]
     ]
 
     const meanHeight = parseFloat(row[row.length - 2]) // 2nd last column
+    // const color = getColorFromValue(parseInt(row[daysIndex]), 12815, 19420)
     const color = getColorFromHeight(meanHeight)
 
     return {
