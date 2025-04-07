@@ -28,104 +28,88 @@ const map = new maplibregl.Map({
 })
 
 function getColorFromValue(value, min, max) {
-    // Ensure the value is clamped within the min-max range
     value = Math.max(min, Math.min(max, value));
-
-    // Calculate the normalized value between 0 and 1
     const normalizedValue = (value - min) / (max - min);
-
-    // Convert the normalized value to a grayscale value between 0 (black) and 255 (white)
     const grayscale = Math.floor(normalizedValue * 255);
-
-    // Return the color as a string in rgb format
     return `rgb(${grayscale}, ${grayscale}, ${grayscale})`;
 }
 
 function getColorFromHeight(h) {
-    // Clamp between 0 and 150
     const clamped = Math.max(0, Math.min(150, h))
-
-    // Use HSL where 240 (blue) → 120 (green) → 0 (red) → 60 (yellow)
-    let hue
+    let hue;
     if (clamped <= 50) {
-        hue = 240 - (clamped / 50) * 120 // 240 to 120
+        hue = 240 - (clamped / 50) * 120;
     } else if (clamped <= 100) {
-        hue = 120 - ((clamped - 50) / 50) * 120 // 120 to 0
+        hue = 120 - ((clamped - 50) / 50) * 120;
     } else {
-        hue = ((clamped - 100) / 50) * 60 // 0 to 60
+        hue = ((clamped - 100) / 50) * 60;
     }
-
-    return `hsl(${hue}, 100%, 50%)`
+    return `hsl(${hue}, 100%, 50%)`;
 }
 
 function rowToFeature(row) {
-    if (row.length < 11) return null
+    if (row.length < 11) return null;
 
-    const tileNumberIndex = 0
-    const dateIndex = 1
-    const daysSince1970Index = 2
-    const valueCountIndex = 3
-    const coordIndex= 4
-    const minValueIndex= 12
-    const maxValueIndex= 13
-    const meanValueIndex= 14
-    const errCodeIndex= 15
+    const tileNumberIndex = 0;
+    const dateIndex = 1;
+    const coordIndex = 4;
+    const minValueIndex = 12;
+    const maxValueIndex = 13;
+    const meanValueIndex = 14;
     const coords = [
         [parseFloat(row[coordIndex]), parseFloat(row[coordIndex + 1])],
         [parseFloat(row[coordIndex + 2]), parseFloat(row[coordIndex + 3])],
         [parseFloat(row[coordIndex + 4]), parseFloat(row[coordIndex + 5])],
         [parseFloat(row[coordIndex + 6]), parseFloat(row[coordIndex + 7])],
         [parseFloat(row[coordIndex]), parseFloat(row[coordIndex + 1])]
-    ]
+    ];
 
-    const meanHeight = parseFloat(row[row.length - 2]) // 2nd last column
-    // const color = getColorFromValue(parseInt(row[daysIndex]), 12815, 19420)
-    const color = getColorFromHeight(meanHeight)
+    const meanHeight = parseFloat(row[row.length - 2]);
+    const color = getColorFromHeight(meanHeight);
 
-    const tile = row[tileNumberIndex]
-    const date = row[dateIndex]
-    const valueCount = row[valueCountIndex]
-    const min = row[minValueIndex]
-    const max = row[maxValueIndex]
-    const mean = row[meanValueIndex]
+    const tile = row[tileNumberIndex];
+    const date = row[dateIndex];
+    const valueCount = row[3];
+    const min = row[minValueIndex];
+    const max = row[maxValueIndex];
+    const mean = row[meanValueIndex];
 
-    const label =
-        `Tile: ${tile}\nDate: ${date}\nValues: ${valueCount}\nMin: ${min}\nMax: ${max}\nMean: ${mean}`
+    const label = `Tile: ${tile}\nDate: ${date}\nValues: ${valueCount}\nMin: ${min}\nMax: ${max}\nMean: ${mean}`;
 
     return {
         type: "Feature",
-        properties: { label, color },
+        properties: { label, color, tile },
         geometry: {
             type: "Polygon",
             coordinates: [coords]
         }
-    }
+    };
 }
 
 map.on('load', () => {
-    const csvUrl = '/topo-tiles-meta.csv'
+    const csvUrl = '/topo-tiles-meta.csv';
     fetch(csvUrl)
         .then(res => res.text())
         .then(csvText => {
-            const features = []
+            const features = [];
 
             Papa.parse(csvText, {
                 skipEmptyLines: true,
                 complete: function (results) {
                     for (const row of results.data) {
-                        const feature = rowToFeature(row)
-                        if (feature) features.push(feature)
+                        const feature = rowToFeature(row);
+                        if (feature) features.push(feature);
                     }
 
                     const geojson = {
                         type: "FeatureCollection",
                         features
-                    }
+                    };
 
                     map.addSource("polygons", {
                         type: "geojson",
                         data: geojson
-                    })
+                    });
 
                     map.addLayer({
                         id: "polygons-fill",
@@ -135,7 +119,7 @@ map.on('load', () => {
                             "fill-color": ["get", "color"],
                             "fill-opacity": 0.5
                         }
-                    })
+                    });
 
                     map.addLayer({
                         id: "polygons-outline",
@@ -145,9 +129,24 @@ map.on('load', () => {
                             "line-color": "#444",
                             "line-width": 0.5
                         }
-                    })
+                    });
 
-                    // Add click event to show popup
+                    // Add a highlight layer
+                    map.addLayer({
+                        id: 'highlighted-polygon',
+                        type: 'line',
+                        source: 'polygons',
+                        paint: {
+                            'line-color': 'rgba(0, 0, 0, 1)', // Red color for the outline
+                            'line-width': 3 // Adjust this value for the thickness of the outline
+                        },
+                        filter: ['==', 'tile', ''] // Start with an empty filter (no tiles are highlighted initially)
+                    });
+
+                    // Variable to keep track of the currently open popup
+                    let currentPopup = null;
+
+                    // Add click event to show popup when clicking on a polygon
                     map.on('click', 'polygons-fill', function (e) {
                         const feature = e.features[0];
                         const labelRaw = feature.properties.label;
@@ -155,20 +154,42 @@ map.on('load', () => {
                         // Convert \n to <br> for HTML popup
                         const labelHtml = labelRaw.replace(/\n/g, '<br>');
 
-                        new maplibregl.Popup()
+                        // If a popup is already open, remove it
+                        if (currentPopup) {
+                            currentPopup.remove();
+                        }
+
+                        // Create a new popup
+                        currentPopup = new maplibregl.Popup()
                             .setLngLat(e.lngLat)
                             .setHTML(`<div style="font-family: monospace;">${labelHtml}</div>`)
                             .addTo(map);
+
+                        // Highlight the clicked tile by setting filter on the highlight layer
+                        map.setFilter('highlighted-polygon', ['==', 'tile', feature.properties.tile]);
+                    });
+
+                    // Remove the popup when clicking anywhere else (empty area)
+                    map.on('click', function (e) {
+                        const features = map.queryRenderedFeatures(e.point);
+                        if (!features.length) {  // No features were clicked, remove the popup
+                            if (currentPopup) {
+                                currentPopup.remove();
+                            }
+
+                            // Clear the highlight
+                            map.setFilter('highlighted-polygon', ['==', 'tile', '']);
+                        }
                     });
 
                     map.on('mouseenter', 'polygons-fill', () => {
-                        map.getCanvas().style.cursor = 'pointer'
-                    })
+                        map.getCanvas().style.cursor = 'pointer';
+                    });
 
                     map.on('mouseleave', 'polygons-fill', () => {
-                        map.getCanvas().style.cursor = ''
-                    })
+                        map.getCanvas().style.cursor = '';
+                    });
                 }
-            })
-        })
-})
+            });
+        });
+});
