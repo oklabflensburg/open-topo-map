@@ -12,7 +12,7 @@ const map = new maplibregl.Map({
                 type: 'raster',
                 tiles: ['https://tiles.oklabflensburg.de/fosm/{z}/{x}/{y}.png'],
                 tileSize: 256,
-                attribution: "© My Custom Tiles"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="dc:rights">OpenStreetMap</a> contributors, &copy; <a href="https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH" target="_blank" rel="dc:rights">GeoBasis-DE/LVermGeo SH</a>/<a href="https://creativecommons.org/licenses/by/4.0/" rel="dc:rights">CC BY 4.0</a>'
             }
         },
         layers: [{
