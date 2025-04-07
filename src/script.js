@@ -61,9 +61,15 @@ function getColorFromHeight(h) {
 function rowToFeature(row) {
     if (row.length < 11) return null
 
-    const daysIndex = 2
+    const tileNumberIndex = 0
+    const dateIndex = 1
+    const daysSince1970Index = 2
+    const valueCountIndex = 3
     const coordIndex= 4
-    const label = row[0]
+    const minValueIndex= 12
+    const maxValueIndex= 13
+    const meanValueIndex= 14
+    const errCodeIndex= 15
     const coords = [
         [parseFloat(row[coordIndex]), parseFloat(row[coordIndex + 1])],
         [parseFloat(row[coordIndex + 2]), parseFloat(row[coordIndex + 3])],
@@ -75,6 +81,16 @@ function rowToFeature(row) {
     const meanHeight = parseFloat(row[row.length - 2]) // 2nd last column
     // const color = getColorFromValue(parseInt(row[daysIndex]), 12815, 19420)
     const color = getColorFromHeight(meanHeight)
+
+    const tile = row[tileNumberIndex]
+    const date = row[dateIndex]
+    const valueCount = row[valueCountIndex]
+    const min = row[minValueIndex]
+    const max = row[maxValueIndex]
+    const mean = row[meanValueIndex]
+
+    const label =
+        `Tile: ${tile}\nDate: ${date}\nValues: ${valueCount}\nMin: ${min}\nMax: ${max}\nMean: ${mean}`
 
     return {
         type: "Feature",
@@ -130,14 +146,27 @@ map.on('load', () => {
                             "line-width": 0.5
                         }
                     })
-
+/*
                     map.on('click', 'polygons-fill', (e) => {
                         const props = e.features[0].properties
                         new maplibregl.Popup()
                             .setLngLat(e.lngLat)
                             .setHTML(`<strong>${props.label}</strong>`)
                             .addTo(map)
-                    })
+                    })*/
+                    // Add click event to show popup
+                    map.on('click', 'polygons-fill', function (e) {
+                        const feature = e.features[0];
+                        const labelRaw = feature.properties.label;
+
+                        // Convert \n to <br> for HTML popup
+                        const labelHtml = labelRaw.replace(/\n/g, '<br>');
+
+                        new maplibregl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`<div style="font-family: monospace;">${labelHtml}</div>`)
+                            .addTo(map);
+                    });
 
                     map.on('mouseenter', 'polygons-fill', () => {
                         map.getCanvas().style.cursor = 'pointer'
