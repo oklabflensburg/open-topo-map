@@ -146,14 +146,7 @@ map.on('load', () => {
                             "line-width": 0.5
                         }
                     })
-/*
-                    map.on('click', 'polygons-fill', (e) => {
-                        const props = e.features[0].properties
-                        new maplibregl.Popup()
-                            .setLngLat(e.lngLat)
-                            .setHTML(`<strong>${props.label}</strong>`)
-                            .addTo(map)
-                    })*/
+
                     // Add click event to show popup
                     map.on('click', 'polygons-fill', function (e) {
                         const feature = e.features[0];
