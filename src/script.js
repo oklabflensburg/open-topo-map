@@ -24,7 +24,8 @@ const map = new maplibregl.Map({
         }]
     },
     center: [9.4, 54.8],
-    zoom: 10
+    zoom: 10,
+    antialias: true, // This is the only related option
 })
 
 function getColorFromValue(value, min, max) {
